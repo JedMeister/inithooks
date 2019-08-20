@@ -6,5 +6,10 @@
 
 echo "* Regenerating SSH cryptographic keys"
 
+systemctl is-active --quiet ssh.service && systemctl stop ssh.service
+
 rm -f /etc/ssh/*_key{,.pub}
 dpkg-reconfigure --frontend=noninteractive --no-reload openssh-server
+
+systemctl is-active --quiet ssh.service || systemctl start ssh.service
+
