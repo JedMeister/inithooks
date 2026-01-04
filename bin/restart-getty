@@ -1,0 +1,59 @@
+#!/bin/bash -e
+
+# This script is intended to be automatically triggered by
+# inithooks-restart-getty.service, which in turn is intended to be started
+# when inithooks.service exits (regardless of exit status)
+#
+# Assuming this script _was_ triggered by inithooks.service exit, on most
+# systems this loop should only run once. Even on low power systems it should
+# only loop 1 additional times. However to ensure that it is as robust as
+# possible, it will wait up to 10 secs for inithooks.service to stop.
+
+fatal() { echo "$*" >&2; exit 1; }
+
+if [[ "$_STARTED_BY_SYSTEMD" == yes ]]; then
+    echo "$(basename "$0") running"
+else
+    fatal "$(basename "$0") not started by systemd - exiting"
+fi
+
+getty1_services=(getty@tty1.service container-getty@1.service)
+getty_target=/etc/systemd/system/getty.target.wants
+getty1_service=
+
+for _getty1 in "${getty1_services[@]}"; do
+    _getty_target="$getty_target/$_getty1"
+    if [[ -L "$_getty_target" ]]; then
+        if [[ -f "$_getty_target" ]]; then
+            getty1_service="$_getty1"
+            echo "system getty service is '$getty1_service'"
+            break
+        fi
+    fi
+done
+if [[ -z "$getty1_service" ]]; then
+    fatal "Could not find valid getty1 service (tried ${getty1_services[*]})"
+fi
+
+for i in {10..0}; do
+    if systemctl is-active -q inithooks.service; then
+        msg="inithooks.service running"
+        if [[ $1 -gt 0 ]]; then
+            echo "$msg - waiting $i more seconds for it to stop" >&2
+        else
+            fatal "$msg - giving up..."
+        fi
+        sleep 1
+    else
+        echo "inithooks service is not running"
+        if systemctl is-active -q "$getty1_service"; then
+            echo "$getty1_service already running, nothing to do"
+        else
+            echo "starting $getty1_service"
+            if ! systemctl start ; then
+                fatal "failed to start $getty1_service"
+            fi
+        fi
+        exit 0
+    fi
+done
