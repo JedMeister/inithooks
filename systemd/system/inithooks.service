@@ -7,7 +7,7 @@ Conflicts=getty@tty1.service container-getty@1.service
 After=getty.target getty@tty1.service container-getty@1.service
 
 # (re)start getty1 if inithooks.service exits non-zero
-OnFailure=test-inithooks-restart-getty1.service
+OnFailure=inithooks-restart-getty1.service
 
 [Service]
 Type=exec
