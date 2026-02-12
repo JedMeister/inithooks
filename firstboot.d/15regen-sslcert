@@ -3,12 +3,12 @@
 
 [[ -n "$_TURNKEY_INIT" ]] && exit 0
 
-[[ -e $INITHOOKS_CONF ]] && . $INITHOOKS_CONF
+[[ -e $INITHOOKS_CONF ]] && . "$INITHOOKS_CONF"
 
-_hook=$(basename $0)
+_hook=$(basename "$0")
 
-fatal() { echo "FATAL: [$_hook] $@" 1>&2 ; exit 1 ; }
-info() { echo "INFO: [$_hook] $@" ; }
+fatal() { echo "FATAL: [$_hook] $*" 1>&2 ; exit 1 ; }
+info() { echo "INFO: [$_hook] $*" ; }
 
 # Check for 'turnkey-make-ssl-cert' - should be provided by
 # turnkey-ssl package.
@@ -21,22 +21,14 @@ info "Generating SSL/TLS cert & key."
 $turnkey_make_ssl_cert --default --force
 
 # Restart relevant services
-SERVICES="\
-    nginx
-    apache2
-    lighttpd
-    tomcat9"
+SERVICES=(nginx apache2 lighttpd tomcat10 tomcat11)
 
 info "Restarting relevant services."
-for service in $SERVICES; do
-    service="${service}.service"
-    if systemctl list-units --full --all | grep -Fq $service; then
-        info "$service found; (re)starting..."
-        if systemctl is-active --quiet $service; then
-            systemctl restart --quiet $service
-        else
-            systemctl start --quiet $service
-        fi
+for service in "${SERVICES[@]}"; do
+    # only restart services that are running
+    if systemctl is-active --quiet "${service}.service"; then
+        info "$service running; restarting..."
+        systemctl restart --quiet "$service"
     fi
 done
 
