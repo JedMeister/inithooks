@@ -1,0 +1,80 @@
+#!/bin/bash -eu
+
+# TurnKey web interface fence - blocks access to web app until system is
+# initialized (admin password configure, etc)
+
+iptables_delete_redirect() {
+    local dport=$1
+    local to_port=$2
+
+    while true; do
+        (2>&1 iptables -t nat -D PREROUTING -p tcp --dport "$dport" -j REDIRECT --to-port "$to_port") > /dev/null || break
+    done
+}
+
+iptables_add_redirect() {
+    local dport=$1
+    local to_port=$2
+
+    iptables_delete_redirect "$dport" "$to_port"
+    iptables -t nat -A PREROUTING -p tcp --dport "$dport" -j REDIRECT --to-port "$to_port"
+}
+
+iptables_unensure_accept() {
+    # remove ACCEPT line for fence ports (used in appliances that have a
+    # `filter` policy of `DROP`)
+    local dport=$1
+    while true; do
+        (2>&1 iptables -t filter -D INPUT -p tcp -m tcp --dport "$dport" -j ACCEPT) > /dev/null || break
+    done
+}
+
+iptables_ensure_accept() {
+    # add ACCEPT line for fence ports (used in appliances that have a
+    # `filter` policy of `DROP`)
+    local dport=$1
+    iptables_unensure_accept "$dport"
+    iptables -t filter -A INPUT -p tcp -m tcp --dport "$dport" -j ACCEPT
+}
+
+iptables_redirect() {
+    local op
+    local mop
+    local port
+    case "$1" in
+      start)
+          op=iptables_add_redirect
+          mop=iptables_ensure_accept
+        ;;
+      stop)
+          op=iptables_delete_redirect
+          mop=iptables_unensure_accept
+        ;;
+    esac
+
+    for port in "${HTTP_PORTS[@]}"; do
+        $op "$port" "$HTTP_FENCE_PORT"
+    done
+
+    for port in "${HTTPS_PORTS[@]}"; do
+        $op "$port" "$HTTPS_FENCE_PORT"
+    done
+
+    $mop "$HTTP_FENCE_PORT"
+    $mop "$HTTPS_FENCE_PORT"
+}
+
+case "$1" in
+    start)
+	    echo "Starting turnkey-init-fence"
+        iptables_redirect start
+	    ;;
+    stop)
+	    echo "Stopping turnkey-init-fence"
+        iptables_redirect stop
+	    ;;
+	*)
+		echo "Unknown command: $1" >&2
+        exit 1
+		;;
+esac
