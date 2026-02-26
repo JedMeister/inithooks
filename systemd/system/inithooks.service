@@ -1,0 +1,26 @@
+[Unit]
+Description=Run boot scripts and start confconsole on tty1
+# ensure inithooks only runs once per boot
+ConditionPathExists=!/run/inithooks-complete
+# kill getty service if it's running
+Conflicts=getty@tty1.service container-getty@1.service
+After=getty.target getty@tty1.service container-getty@1.service
+
+# (re)start getty1 if inithooks.service exits non-zero
+OnFailure=inithooks-restart-getty1.service
+
+[Service]
+Type=exec
+ExecStart=/usr/lib/inithooks/run
+# ensure inithooks only runs once per boot
+ExecStartPost=/usr/bin/touch /run/inithooks-complete
+# (re)start getty1 if inithooks.service exits cleanly
+ExecStopPost=/bin/systemctl start inithooks-restart-getty1.service
+
+StandardInput=tty
+StandardOutput=tty
+StandardError=journal
+TTYPath=/dev/tty1
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,7 @@
+[Unit]
+Description=Restart getty1 - triggered when inithooks.service exits
+
+[Service]
+Type=exec
+Environment="_STARTED_BY_SYSTEMD=yes"
+ExecStart=/usr/lib/inithooks/bin/restart-getty
