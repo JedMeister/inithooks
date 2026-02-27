@@ -5,7 +5,7 @@ After=iptables.service firewalld.service ip6tables.service ipset.service nftable
 Before=apache2.service nginx.service lighttpd.service
 
 [Service]
-Type=one-shot
+Type=oneshot
 EnvironmentFile=/etc/default/turnkey-init-fence
 ExecStart=/usr/lib/inithooks/bin/turnkey-init-fence start
 ExecStop=/usr/lib/inithooks/bin/turnkey-init-fence stop
