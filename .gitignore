@@ -18,3 +18,8 @@ debian/*.debhelper.log
 debian/*.debhelper
 debian/*.substvars
 debian/files
+
+# other files/dirs
+tmp
+tags
+*.tar.bz2
