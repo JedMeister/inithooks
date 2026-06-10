@@ -1,0 +1,111 @@
+v2.3.0 Release Notes
+====================
+
+Trixie updates, bugfixes, refactoring and code quality updates.
+
+* Trixie updates:
+  - Support for updated dialog return values.
+
+* Bugfixes:
+  - Ensure everyboot scripts only run once per boot.
+  - firstboot.d/15regen-sslcert:
+    - Only services which are already running need to be restarted as restart
+      is only to apply updated certs. If any other services which use SSL certs
+      are not already running either it is broken (and will still fail to start
+      anyway & needs to be fixed as a separate action) or it will pick up new
+      certs when it is started.
+
+* Improvements and general code quality updates:
+  - inithooks service / login functionality:
+    - Reimplement an inithooks.service:
+      - Start inithooks.service after relevant getty1 service at boot.
+      - inithooks.service configured to conflict with getty1 services so
+        existing getty1 service/s will be killed.
+      - When initihooks.service (running either inithooks or confconsole)
+        exits, a new inithooks-restart-getty1.service is started, which in turn
+        (re)starts getty1. To ensure robust operation, regardless of
+        inithooks/confconsole exit code, inithooks-restart-getty1.service will
+        be triggered when inithooks.service exits - so getty1 will always be
+        started.
+      - inithooks-restart-getty.service runs a script which ensures that
+        inithooks.service is not running then (re)starts the appropriate getty1
+        service.
+  - inithooks run script:
+    - Delay start of inithooks/confconsole at boot time to reduce chance of
+      boot messages overwriting inithooks/confconsole.
+      - Developers please note that hooks with a prefix less than '30' will
+        still run early, so should always be non-interactive.
+  - inithook firstboot scripts:
+    - firstboot.d/01ipconfig:
+      - Minor bugfix and shell linting.
+    - firstboot.d/29tagid (see also 'inithooks fence' entry below):
+      - Update to support optional init-fence custom htmldocs.
+      - Improve mechanism which applies dynamic appliance specific html
+        updates.
+      - Update appliance name substitution to match changes in
+        htdocs/index.html
+      - restart init-fence post dynamically updating the fence html.
+    - firstboot.d/30turnkey-init-fence (see also 'inithooks fence' entry
+      below):
+      - Remove starting/enabling of init-fence - now runs by default.
+        (Remaining code required for headless builds).
+      - New pre-seed variable 'AUTO_RUN' to skip remaining functionality
+        ('AUTO_RUN' preset by the first automatic run of the inithooks on
+        headless builds).
+    - firstboot.d/95secupdates
+      - Linting and more detailed comments.
+      - Ensure inithook variable (SEC_UPDATES) tests are case insensitive;
+        eliminates risk of unintended behavior when pre-seeding.
+    - firstboot.d/97turnkey-init-fence-disable (see also 'inithooks fence'
+      entry below):
+      - Make executable by default (to disable fence post-init).
+      - Support for 'AUTO_RUN' pre-seed var - if not set will stop and disable
+        the init fence.
+  - inithooks fence:
+    - Replace init.d script with turnkey-init-fence.service.
+    - New service also supports 'systemctl reload turnkey-init-fence' which
+      restarts the web server but does not disable the firewall rules.
+    - Move remaining functionality of old init.d script to a "normal" bash
+      script
+  - /usr/lib/inithooks/bin/turnkey-init-fence:
+      - Enable/disable firewall rules.
+      - Start/stop/reload mini server ('simplehttpd.py').
+      - Apply equivalent IPv6 firewall redirect rules to existing IPv4 rules.
+      - Additional logging added.
+    - Minor updates for /etc/default/turnkey-init-fence:
+      - Bash arrays rather than space separated strings.
+      - Remove webshell port (12320) and add Adminer port (12322).
+    - Updates to init-fence web content (displayed when fence is up).
+      - Support for custom init-fence content.
+        If inithooks/turnkey-init-fence/htdocs exists in /var/lib, that will be
+        used. Otherwise the default packaged content (stored in equivalent
+        /usr/lib path) are copied to the /var/lib path and updated for the
+        specific appliance.
+    - Ensure that the SSH commands displayed are correct for IPv6 address
+      (dynamically generated via javascript).
+  - Updates to mini server ('simplehttpd.py'):
+    - Replace use of 'ssl.wrap_socket()' with 'ssl.SSLContext().wrap_socket()'
+      ('ssl.wrap_socket()' removed in python3.12).
+    - Dual IP stack support (i.e. IPv4 & IPv6).
+    - Minor typing fixes.
+    - Write PID file using context manager.
+  - Python linting fixes, updated formating and improved and modernized typing.
+  - Some bash linting fixes (incomplete).
+  - Other minor code refactoring.
+  - README update (still imperfect, but better and at least up to date).
+
+* Packaging:
+  - General packaging cleanup (in debian dir).
+  - Support building as reproducable package.
+  - Leverage dh_installsystemd to install services.
+  - Bump compatibility version (10 => 13)
+  - Update compatibility version implementation style: separate 'compat'
+    file => 'debhelper-compat (= 13)' build depend in 'control' file.
+  - Update package standards version to - v4.7.2. More work required to make
+    package fully compliant.
+  - Bump misc dependency versions.
+  - Apply Lintian overides.
+  - Add package long description.
+  - Update debian/copyright.
+  - Update gitignore to avoid inadvertant inclusion of python/debian build
+    assets.
