@@ -32,6 +32,7 @@ import socket
 import socketserver
 import ssl
 import sys
+import time
 from os.path import abspath, exists, isdir, splitext
 from tempfile import NamedTemporaryFile
 from typing import NoReturn
@@ -58,6 +59,39 @@ def usage(msg: str | getopt.GetoptError = "") -> NoReturn:
     assert __doc__ is not None
     print(__doc__.strip(), file=sys.stderr)
     sys.exit(1)
+
+
+def wait_for_valid_cert(
+        certfile: str,
+        keyfile: str | None = None,
+        timeout: int = 30,
+        interval: float = 0.5,
+    ) -> None:
+    """Wait until certfile and keyfile exist and are a matching pair.
+
+    If keyfile is None, certfile is expected to contain both cert and key.
+    """
+    deadline = time.monotonic() + timeout
+
+    files_to_check = [f for f in (certfile, keyfile) if f is not None]
+
+    while time.monotonic() < deadline:
+        try:
+            # Relevant file/s must exist and be non-empty
+            if not all(os.path.getsize(f) > 0 for f in files_to_check):
+                time.sleep(interval)
+                continue
+
+            # Try loading it/them
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ctx.load_cert_chain(certfile=certfile, keyfile=keyfile)
+            return  # Success
+        except (ssl.SSLError, OSError):
+            time.sleep(interval)
+    raise TimeoutError(
+        f"Timed out after {timeout}s waiting for a valid cert/key pair: "
+        f"{certfile}, {keyfile}"
+    )
 
 
 def is_writeable(path: str) -> bool:
@@ -397,6 +431,12 @@ def main():
 
     signal.signal(signal.SIGHUP, sighandler)
     signal.signal(signal.SIGTERM, sighandler)
+
+    try:
+        # ensure cert generation has finished
+        wait_for_valid_cert(certfile, keyfile)
+    except TimeoutError as e:
+        fatal(e)
 
     server = SimpleWebServer(webroot, http_address, https_conf, runas)
     if daemonize_pidfile:
