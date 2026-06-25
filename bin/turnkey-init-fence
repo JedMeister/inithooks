@@ -141,6 +141,14 @@ case "$1" in
         stop_mini_server
         echo "Stopped turnkey-init-fence"
         ;;
+    stop-post)
+        # SERVICE_RESULT is set by systemd
+        if [[ "$SERVICE_RESULT" != "success" ]]; then
+            echo "Post-stop cleanup for failed turnkey-init-fence"
+            iptables_redirect stop
+            echo "Firewall rules removed"
+        fi
+        ;;
     reload)
         echo "Reloading turnkey-init-fence"
         stop_mini_server
