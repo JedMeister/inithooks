@@ -22,22 +22,19 @@ Known bugs:
 
 """
 
-import os
-from os.path import exists, abspath, isdir, splitext
-from tempfile import NamedTemporaryFile
-import socket
-import sys
 import getopt
-from typing import NoReturn
-
+import grp
 import http.server
+import os
+import pwd
+import signal
+import socket
 import socketserver
 import ssl
-
-import pwd
-import grp
-
-import signal
+import sys
+from os.path import abspath, exists, isdir, splitext
+from tempfile import NamedTemporaryFile
+from typing import NoReturn
 
 
 class SimpleWebServerError(Exception):
