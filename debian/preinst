@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "upgrade" ]; then
+    if systemctl is-active -q inithooks.service; then
+        touch /run/inithooks-was-active
+    fi
+fi

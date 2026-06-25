@@ -10,6 +10,23 @@ if [ -f /etc/default/turnkey-init-fence ]; then
     fi
 fi
 
+if [ "$1" = "configure" ]; then
+    if [ -n "$2" ]; then
+        # this is an upgrade ($2 is the old version)
+        # /run/inithooks-was-active is created by preinst script if relevant
+        if [ -f /run/inithooks-was-active ]; then
+            rm -f /run/inithooks-was-active
+            systemctl start inithooks.service
+        else
+            systemctl start getty@tty1.service container-getty@1.service 2>/dev/null || true
+        fi
+    else
+        # fresh install ($2 is empty)
+        systemctl daemon-reload
+        systemctl enable inithooks.service
+    fi
+fi
+
 chmod 755 /usr/lib/inithooks/bin/inithooks_cache.py
 
 #DEBHELPER#
