@@ -5,11 +5,13 @@ After=iptables.service firewalld.service ip6tables.service ipset.service nftable
 Before=apache2.service nginx.service lighttpd.service tomcat10.service tomcat11.service
 
 [Service]
-Type=oneshot
+Type=forking
+PIDFile=/run/init-fence.pid
 RemainAfterExit=true
 ExecStart=/usr/lib/inithooks/bin/turnkey-init-fence start
 ExecReload=/usr/lib/inithooks/bin/turnkey-init-fence reload
 ExecStop=/usr/lib/inithooks/bin/turnkey-init-fence stop
+ExecStopPost=/usr/lib/inithooks/bin/turnkey-init-fence stop-post
 
 [Install]
 WantedBy=multi-user.target

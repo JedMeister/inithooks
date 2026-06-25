@@ -141,6 +141,11 @@ case "$1" in
         stop_mini_server
         echo "Stopped turnkey-init-fence"
         ;;
+    post-stop)
+        echo "Post-stop cleanup for turnkey-init-fence"
+        iptables_redirect stop
+        echo "Firewall rules removed"
+        ;;
     reload)
         echo "Reloading turnkey-init-fence"
         stop_mini_server
