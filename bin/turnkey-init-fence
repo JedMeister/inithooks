@@ -142,9 +142,12 @@ case "$1" in
         echo "Stopped turnkey-init-fence"
         ;;
     post-stop)
-        echo "Post-stop cleanup for turnkey-init-fence"
-        iptables_redirect stop
-        echo "Firewall rules removed"
+        # SERVICE_RESULT is set by systemd
+        if [[ "$SERVICE_RESULT" != "success" ]]; then
+            echo "Post-stop cleanup for failed turnkey-init-fence"
+            iptables_redirect stop
+            echo "Firewall rules removed"
+        fi
         ;;
     reload)
         echo "Reloading turnkey-init-fence"
