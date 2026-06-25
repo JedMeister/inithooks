@@ -141,7 +141,7 @@ case "$1" in
         stop_mini_server
         echo "Stopped turnkey-init-fence"
         ;;
-    post-stop)
+    stop-post)
         # SERVICE_RESULT is set by systemd
         if [[ "$SERVICE_RESULT" != "success" ]]; then
             echo "Post-stop cleanup for failed turnkey-init-fence"
