@@ -5,8 +5,7 @@ After=iptables.service firewalld.service ip6tables.service ipset.service nftable
 Before=apache2.service nginx.service lighttpd.service tomcat10.service tomcat11.service
 
 [Service]
-Type=forking
-PIDFile=/run/init-fence.pid
+Type=oneshot
 RemainAfterExit=true
 ExecStart=/usr/lib/inithooks/bin/turnkey-init-fence start
 ExecReload=/usr/lib/inithooks/bin/turnkey-init-fence reload
