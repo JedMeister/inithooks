@@ -1,4 +1,7 @@
-WEBROOT=/usr/lib/inithooks/turnkey-init-fence/htdocs
+# if this path does not exist, /usr/lib/inithooks/turnkey-init-fence/htdocs
+# is used as a fallback
+HTDOCS=/var/lib/inithooks/turnkey-init-fence/htdocs
+
 HTTP_PORTS=(80)
 HTTPS_PORTS=(443 12321 12322)
 
