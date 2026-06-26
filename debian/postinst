@@ -2,33 +2,36 @@
 
 set -e
 
-mkdir -p /var/run/turnkey-init-fence
-if [ -f /etc/default/turnkey-init-fence ]; then
-    RUNAS=$(sed -n 's/^RUNAS=//p' /etc/default/turnkey-init-fence)
-    if [ -n "$RUNAS" ]; then
-        chown -R "$RUNAS" /var/run/turnkey-init-fence
-    fi
-fi
-
-if [ "$1" = "configure" ]; then
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] \
+        || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+    systemctl daemon-reload >/dev/null || true
     if [ -n "$2" ]; then
         # this is an upgrade ($2 is the old version)
-        # /run/inithooks-was-active is created by preinst script if relevant
-        if [ -f /run/inithooks-was-active ]; then
+        # systemctl restart will start services if not running
+
+        # /run/_service_-was-active is created by preinst script
+        if [ -f "/run/inithooks-was-active" ]; then
             rm -f /run/inithooks-was-active
-            systemctl start inithooks.service
+            # restart will start if not running
+            systemctl restart inithooks.service
+            # unlikely that turnkey-init-fence is running when package is
+            # upgraded but just in case
+            if [ -f "/run/turnkey-init-fence-was-active" ]; then
+                rm -f /run/turnkey-init-fence-was-active
+                systemctl restart turnkey-init-fence.service
+            fi
         else
-            systemctl start getty@tty1.service container-getty@1.service 2>/dev/null || true
+            # getty1 should already be running if inithooks wasn't, but let's
+            # make sure
+            systemctl restart getty@tty1.service container-getty@1.service 2>/dev/null || true
         fi
     else
-        # fresh install ($2 is empty)
-        systemctl daemon-reload
+        # fresh install ($2 is empty) - enable services
         systemctl enable inithooks.service
+        systemctl enable turnkey-init-fence.service
     fi
 fi
 
 chmod 755 /usr/lib/inithooks/bin/inithooks_cache.py
-
-#DEBHELPER#
 
 exit 0

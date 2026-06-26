@@ -8,16 +8,15 @@ BUILD=$(perl -ne 'chomp; s/.*\((.*)\).*/\1/; s/^\S+ ?//; $tags=$_ ? $_ : "iso"; 
 
 ### initfence 
 
-FENCE_DIR=lib/inithooks/turnkey-init-fence
-FENCE_HTDOCS="$FENCE_DIR/htdocs"
-FENCE_INDEX="$FENCE_HTDOCS/index.html"
+# shellcheck source=default/turnkey-init-fence
+source /etc/default/turnkey-init-fence
 
-if [[ ! -d "/var/$FENCE_DIR" ]]; then
-    mkdir -p "/var/$FENCE_DIR"
-    cp -R "/usr/$FENCE_HTDOCS" "/var/$FENCE_DIR/"
+if [[ ! -d "$HTDOCS" ]]; then
+    mkdir -p "$(dirname "$HTDOCS")"
+    cp -R "/usr/lib/inithooks/turnkey-init-fence/htdocs" "$(dirname "$HTDOCS")"
 fi
 
-INITFENCE_INDEX="/var/$FENCE_INDEX"
+INITFENCE_INDEX="$HTDOCS/index.html"
 sed -i "s|@APP_NAME@|$APP_NAME|" $INITFENCE_INDEX
 
 if ! grep -q ajax.turnkeylinux.org $INITFENCE_INDEX; then

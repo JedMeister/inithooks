@@ -6,13 +6,17 @@
 DEBUG=${DEBUG:-}
 [[ -z "$DEBUG" ]] || set -x
 
-HTDOCS=lib/inithooks/turnkey-init-fence/htdocs
 PIDFILE=/run/init-fence.pid
 LOGFILE=/var/log/init-fence.log
-SERVER_RUNAS=nobody
 
 # shellcheck source=default/turnkey-init-fence
 source /etc/default/turnkey-init-fence
+
+# firstboot.d/29tagid creates $HTDOCS if it doesn't exist, but fallback to
+# packaged htdocs so fence doesn't fail if it doesn't (yet) exist
+if [[ ! -d "$HTDOCS" ]]; then
+    HTDOCS="/usr/lib/inithooks/turnkey-init-fence/htdocs"
+fi
 
 iptables_delete_redirect() {
     local dport=$1
@@ -88,20 +92,16 @@ iptables_redirect() {
 }
 
 start_mini_server() {
-    local htdocs
-    if [[ -d "/var/$HTDOCS" ]]; then
-        htdocs="/var/$HTDOCS"
-    else
-        htdocs="/usr/$HTDOCS"
-    fi
-    echo "Starting init-fence mini-server (serving $htdocs)"
+    echo "Starting init-fence mini-server (serving $HTDOCS)"
     touch "$LOGFILE" "$PIDFILE"
-    chown -R "$SERVER_RUNAS" "$htdocs" "$LOGFILE" "$PIDFILE"
+    chown -R "$RUNAS" "$HTDOCS" "$LOGFILE" "$PIDFILE"
+    find "$HTDOCS" -type d -exec chmod 0555 {} \;
+    find "$HTDOCS" -type f -exec chmod 0444 {} \;
     /usr/lib/inithooks/bin/simplehttpd.py \
         --daemonize="$PIDFILE" \
-        --runas="$SERVER_RUNAS" \
+        --runas="$RUNAS" \
         --logfile="$LOGFILE" \
-        "$htdocs" \
+        "$HTDOCS" \
         "$HTTP_FENCE_PORT" \
         "$HTTPS_FENCE_PORT" \
         "$HTTPS_FENCE_CERTFILE" \

@@ -3,7 +3,9 @@
 set -e
 
 if [ "$1" = "upgrade" ]; then
-    if systemctl is-active -q inithooks.service; then
-        touch /run/inithooks-was-active
-    fi
+    for service in inithooks turnkey-init-fence; do
+        if systemctl is-active -q "$service.service"; then
+            touch "/run/$service-was-active"
+        fi
+    done
 fi
