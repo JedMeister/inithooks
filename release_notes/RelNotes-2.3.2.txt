@@ -1,0 +1,26 @@
+v2.3.2 Release Notes
+====================
+
+Bugfix and make service/s more robust.
+
+* Bugfixes:
+  - simplehttpd.py
+    - Handle certificate/key mismatch corner case.
+
+* Improvements:
+  - init-fence
+    - Handle ipv4 & ipv6 firewall rules separately to avoid risk of single
+      failure causing other rules to not be applied/torn down.
+    - Ensure service tears down firewall rules, even if turnkey-init-fence or
+      simplehttpd.py fail.
+    - Tidy up of init-fence code. Includes refatoring of:
+        - default/turnkey-init-fence
+        - firstboot.d/29tagid
+        - bin/turnkey-init-fence
+        - turnkey-init-fence.service
+        - inithooks.service (debian/inithooks.turnkey-init-fence.service)
+    - Move all everyboot management to run script and reduce complexity.
+
+  - Debian packaging:
+    - Replace auto-generated postint components with explicit code to ensure
+      desired functionality.

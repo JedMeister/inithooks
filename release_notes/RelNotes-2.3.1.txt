@@ -1,4 +1,4 @@
-v2.3.0 Release Notes
+v2.3.1 Release Notes
 ====================
 
 Trixie updates, bugfixes, refactoring and code quality updates.
